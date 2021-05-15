@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Idle</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="">
+<style>
+body {
+	font-family:"Segoe UI",sans-serif;
+	text-align:center;
+	background-color: black;
+	color:white;
+	position: absolute;
+	margin: 0;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%,-60%);
+}	
+#timefield{
+	font-size: 55vh;
+}
+h1{
+	font-size: 5vh;
+}
+button{
+	font-size:5vh;
+	border-style:none;
+	border-radius:8vh;
+	background-color:white;
+	padding:1vh;
+	width:60vw;
+}
+button:hover{
+	background-color:lightgrey;
+}
+button:active{
+	background-color:grey;
+}
+button:disabled{
+	background-color:grey;
+	color:grey;
+}
+#spacer{
+	padding:1vh;
+}
+
+@media only screen and (max-width: 1366px){
+	button{
+		width:80vw;
+	}
+	#timefield{
+		font-size:40vw;
+	}
+}
+</style>
+<script>
+
+var beginTime;
+var endTime;
+
+var lastLoggedTime;
+var avgTimeBetween = 0.0;
+var numSessions = -1;
+
+function stopwatch(){
+	document.title = "Idle";
+	if(document.getElementById("start").innerHTML == "start stopwatch"){
+		document.getElementById("start").innerHTML = "stop";
+		let curTime = 0;
+		document.getElementById("timefield").innerHTML = curTime;
+		document.getElementById("wait").disabled = true;
+		document.title = "Stopwatch - 0";
+
+		beginTime = setInterval(
+			function(){
+				curTime = curTime + 1; 
+				document.getElementById("timefield").innerHTML = curTime;
+				document.title = "Stopwatch - " + curTime;
+			}, 1000);
+	}
+	else{
+		document.getElementById("start").innerHTML = "start stopwatch";
+		document.title = "Idle";
+		clearInterval(beginTime);
+		document.getElementById("wait").disabled = false;
+	}
+}
+
+function timer(){
+	var remainingTime = 3600;
+
+	if(document.getElementById("wait").innerHTML == "1 hour timer"){
+		document.title = "Timer - 60:00";
+		document.getElementById("wait").innerHTML = "stop timer";
+		document.getElementById("start").disabled = true;
+		document.getElementById("timefield").innerHTML = "60:00";
+
+		numSessions += 1;
+
+		if(numSessions > 0) {
+			avgTimeBetween = (avgTimeBetween * (numSessions - 1.0) / numSessions) + (Date.now() - lastLoggedTime)/numSessions/1000;
+			document.getElementById("avgTimer").innerHTML = "Average time between sessions: " + Math.floor(avgTimeBetween/60) + " mins " + Math.floor(avgTimeBetween%60) + " seconds (" + numSessions + " sessions completed)";
+		}
+
+		lastLoggedTime = Date.now();	
+		var timerEndsAt = lastLoggedTime + (remainingTime * 1000);
+		var curTime = lastLoggedTime;	
+		console.log("Starting at " + curTime + ". Should end at " + timerEndsAt + ".");
+
+		endTime = setTimeout(
+				function(){
+						clearInterval(beginTime); 
+						document.getElementById("timefield").innerHTML = "0:00!"; 
+						document.getElementById("start").disabled = false; 
+						document.getElementById("wait").innerHTML = "1 hour timer"; 
+						new Audio('timeout.mp3').play(); 
+						document.title = "[!] Timer has expired!"
+
+						console.log("Ended at " + (Date.now() - curTime));
+			},remainingTime*1000);
+		beginTime = setInterval(
+			function(){
+				curTime = (timerEndsAt - Date.now()) / 1000; 
+				var timeInMins = Math.trunc(curTime / 60); 
+				var timeInSecs = Math.trunc(curTime % 60); 
+				if(timeInSecs < 10){ 
+					timeInSecs = "0" + timeInSecs; 
+				} 
+				document.getElementById("timefield").innerHTML = timeInMins + ":" + timeInSecs;
+				document.title = "Timer - " + timeInMins + ":" + timeInSecs;
+			}, 250);
+		
+	}
+	else{
+		document.getElementById("start").disabled = false;
+		document.getElementById("wait").innerHTML = "1 hour timer";
+		document.title = "Idle"
+		clearInterval(beginTime);
+		clearInterval(endTime);
+	}
+}
+</script>
+<body>
+
+<div id="timefield">-</div>
+
+<button id="wait" onclick="timer()">1 hour timer</button>
+<div id="spacer"></div>
+<button id="start" onclick="stopwatch()">start stopwatch</button>
+<div id="avgTimer">average time between sessions: [need more sessions]</div>
+
+</body>
+</html>
