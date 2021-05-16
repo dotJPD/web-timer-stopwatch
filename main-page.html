@@ -62,79 +62,115 @@ var lastLoggedTime;
 var avgTimeBetween = 0.0;
 var numSessions = -1;
 
+var allElems;
+
+document.addEventListener('DOMContentLoaded', function(){
+	// Using a dictionary to store document elements we want to change to prevent 
+	// unnecessary time-consuming calls to the DOM
+	allElems = {
+		"wait" : document.getElementById("wait"),
+		"start" : document.getElementById("start"),
+		"timefield" : document.getElementById("timefield"),
+		"avgTimer" : document.getElementById("avgTimer")
+	}
+});
+
 function stopwatch(){
+	
 	document.title = "Idle";
-	if(document.getElementById("start").innerHTML == "start stopwatch"){
-		document.getElementById("start").innerHTML = "stop";
-		let curTime = 0;
-		document.getElementById("timefield").innerHTML = curTime;
-		document.getElementById("wait").disabled = true;
-		document.title = "Stopwatch - 0";
+
+	// If the stopwatch button currently says "start" and not stop we start the stopwatch
+	if(allElems["start"].innerHTML == "start stopwatch"){
+		allElems["start"].innerHTML = "stop";
+		
+		var startTime = Date.now();
+		var curTime = 0;
+		
+		allElems["timefield"].innerHTML = curTime;
+		allElems["wait"].disabled = true;
+		document.title = "0 | Stopwatch";
 
 		beginTime = setInterval(
 			function(){
-				curTime = curTime + 1; 
-				document.getElementById("timefield").innerHTML = curTime;
-				document.title = "Stopwatch - " + curTime;
-			}, 1000);
+				// Calculates the amount of time in seconds between now and when the
+				// stopwatch was started and sets timefield accordingly
+				curTime = (Date.now() - startTime)/1000; 
+				allElems["timefield"].innerHTML = Math.trunc(curTime);
+				document.title = Math.trunc(curTime) + " | Stopwatch";
+			}, 100
+		);
 	}
+	// Stopping the stopwatch, resetting the page into its idle state
 	else{
-		document.getElementById("start").innerHTML = "start stopwatch";
+		allElems["start"].innerHTML = "start stopwatch";
 		document.title = "Idle";
 		clearInterval(beginTime);
-		document.getElementById("wait").disabled = false;
+		allElems["wait"].disabled = false;
 	}
 }
 
 function timer(){
+	// Remaining time in seconds
 	var remainingTime = 3600;
 
-	if(document.getElementById("wait").innerHTML == "1 hour timer"){
-		document.title = "Timer - 60:00";
-		document.getElementById("wait").innerHTML = "stop timer";
-		document.getElementById("start").disabled = true;
-		document.getElementById("timefield").innerHTML = "60:00";
+	// When we're starting the timer
+	if(allElems["wait"].innerHTML == "1 hour timer"){
+		allElems["wait"].innerHTML = "stop timer";
+
+		// Disables the stopwatch button until we stop the timer
+		allElems["start"].disabled = true;
 
 		numSessions += 1;
 
+		// Calculates running mean (definitely something well-established in math, but I derived the equation by myself).
+		// Only calculated when this timer is not the first timer that has been done in this session
 		if(numSessions > 0) {
 			avgTimeBetween = (avgTimeBetween * (numSessions - 1.0) / numSessions) + (Date.now() - lastLoggedTime)/numSessions/1000;
-			document.getElementById("avgTimer").innerHTML = "Average time between sessions: " + Math.floor(avgTimeBetween/60) + " mins " + Math.floor(avgTimeBetween%60) + " seconds (" + numSessions + " sessions completed)";
+			allElems["avgTimer"].innerHTML = "Average time between sessions: " 
+				+ Math.floor(avgTimeBetween/60) + " mins " + Math.floor(avgTimeBetween%60) 
+				+ " seconds (" + numSessions + " sessions completed)";
 		}
 
 		lastLoggedTime = Date.now();	
 		var timerEndsAt = lastLoggedTime + (remainingTime * 1000);
-		var curTime = lastLoggedTime;	
-		console.log("Starting at " + curTime + ". Should end at " + timerEndsAt + ".");
+		var curTime = lastLoggedTime;
 
-		endTime = setTimeout(
-				function(){
-						clearInterval(beginTime); 
-						document.getElementById("timefield").innerHTML = "0:00!"; 
-						document.getElementById("start").disabled = false; 
-						document.getElementById("wait").innerHTML = "1 hour timer"; 
-						new Audio('timeout.mp3').play(); 
-						document.title = "[!] Timer has expired!"
-
-						console.log("Ended at " + (Date.now() - curTime));
-			},remainingTime*1000);
 		beginTime = setInterval(
 			function(){
 				curTime = (timerEndsAt - Date.now()) / 1000; 
+
 				var timeInMins = Math.trunc(curTime / 60); 
 				var timeInSecs = Math.trunc(curTime % 60); 
+				
 				if(timeInSecs < 10){ 
 					timeInSecs = "0" + timeInSecs; 
 				} 
-				document.getElementById("timefield").innerHTML = timeInMins + ":" + timeInSecs;
-				document.title = "Timer - " + timeInMins + ":" + timeInSecs;
-			}, 250);
+				
+				allElems["timefield"].innerHTML = timeInMins + ":" + timeInSecs;
+				document.title = timeInMins + ":" + timeInSecs + " | Timer";
+			}, 100
+		);
 		
+		endTime = setTimeout(
+			function(){
+					clearInterval(beginTime); 
+
+					allElems["timefield"].innerHTML = "0:00!"; 
+					allElems["start"].disabled = false; 
+					allElems["wait"].innerHTML = "1 hour timer"; 
+						
+					new Audio('timeout.mp3').play(); 
+					document.title = "[!] Timer has expired!"
+			}, remainingTime*1000
+		);
 	}
+	// When we're ending the timer
 	else{
-		document.getElementById("start").disabled = false;
-		document.getElementById("wait").innerHTML = "1 hour timer";
+		allElems["start"].disabled = false;
+		allElems["wait"].innerHTML = "1 hour timer";
+
 		document.title = "Idle"
+		
 		clearInterval(beginTime);
 		clearInterval(endTime);
 	}
